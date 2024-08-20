@@ -18,6 +18,12 @@ interface Config {
     SEARXNG: string;
     OLLAMA: string;
   };
+  AUTH: {
+    ENDPOINT: string;
+    NEXT_PUBLIC_STACK_PROJECT_ID: string;
+    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: string;
+    STACK_SECRET_SERVER_KEY: string;
+  };
 }
 
 type RecursivePartial<T> = {
@@ -70,3 +76,11 @@ export const updateConfig = (config: RecursivePartial<Config>) => {
     toml.stringify(config),
   );
 };
+
+export const authURL = () => loadConfig().AUTH.ENDPOINT;
+export const authProjectId = () =>
+  loadConfig().AUTH.NEXT_PUBLIC_STACK_PROJECT_ID;
+export const authPublishableClientKey = () =>
+  loadConfig().AUTH.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY;
+export const authSecretServerKey = () =>
+  loadConfig().AUTH.STACK_SECRET_SERVER_KEY;

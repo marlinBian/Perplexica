@@ -8,6 +8,8 @@ import React, {
   type SelectHTMLAttributes,
 } from 'react';
 import ThemeSwitcher from './theme/Switcher';
+import { CurrentUser, useUser } from '@stackframe/stack';
+import { getCookie } from 'cookies-next';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
@@ -61,12 +63,18 @@ interface SettingsType {
 }
 
 const SettingsDialog = ({
+  isLoggedIn,
   isOpen,
   setIsOpen,
 }: {
+  isLoggedIn: boolean;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }) => {
+  if (isOpen && !isLoggedIn) {
+    window.location.href = '/handler/sign-in?after_auth_return_to=%2F';
+    return null;
+  }
   const [config, setConfig] = useState<SettingsType | null>(null);
   const [selectedChatModelProvider, setSelectedChatModelProvider] = useState<
     string | null
@@ -83,14 +91,18 @@ const SettingsDialog = ({
   const [customOpenAIBaseURL, setCustomOpenAIBaseURL] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-
+  console.log('login = %s, isOpen = %s', isLoggedIn, isOpen);
   useEffect(() => {
     if (isOpen) {
       const fetchConfig = async () => {
         setIsLoading(true);
+        const accessToken = getCookie('user_access_token');
+        const refreshToken = getCookie('user_refresh_token');
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/config`, {
           headers: {
             'Content-Type': 'application/json',
+            'x-stack-access-token': accessToken || '',
+            'x-stack-refresh-token': refreshToken || '',
           },
         });
 

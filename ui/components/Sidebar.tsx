@@ -4,9 +4,11 @@ import { cn } from '@/lib/utils';
 import { BookOpenText, Home, Search, SquarePen, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useSelectedLayoutSegments } from 'next/navigation';
-import React, { useState, type ReactNode } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import Layout from './Layout';
 import SettingsDialog from './SettingsDialog';
+import { UserButton, useUser } from '@stackframe/stack';
+import { setCookie } from 'cookies-next';
 
 const VerticalIconContainer = ({ children }: { children: ReactNode }) => {
   return (
@@ -19,6 +21,24 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const user = useUser();
+  useEffect(() => {
+    (async () => {
+      console.info('use effect user');
+      if (user) {
+        setIsLoggedIn(true);
+        const { accessToken, refreshToken } = await user.getAuthJson();
+        setCookie('user_refresh_token', refreshToken, { maxAge: 3600 });
+        setCookie('user_access_token', accessToken, { maxAge: 3600 });
+      } else {
+        setIsLoggedIn(false);
+        setCookie('user_refresh_token', '', { maxAge: 0 });
+        setCookie('user_access_token', '', { maxAge: 0 });
+      }
+      console.log('log in status = ', isLoggedIn);
+    })();
+  }, [user]);
   const navLinks = [
     {
       icon: Home,
@@ -66,13 +86,15 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
               </Link>
             ))}
           </VerticalIconContainer>
-
-          <Settings
-            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-            className="cursor-pointer"
-          />
-
+          <VerticalIconContainer>
+            <UserButton />
+            <Settings
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              className="cursor-pointer"
+            />
+          </VerticalIconContainer>
           <SettingsDialog
+            isLoggedIn={isLoggedIn}
             isOpen={isSettingsOpen}
             setIsOpen={setIsSettingsOpen}
           />

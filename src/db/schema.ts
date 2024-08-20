@@ -13,6 +13,7 @@ export const messages = sqliteTable('messages', {
 
 export const chats = sqliteTable('chats', {
   id: text('id').primaryKey(),
+  userID: text('userID'),
   title: text('title').notNull(),
   createdAt: text('createdAt').notNull(),
   focusMode: text('focusMode').notNull(),

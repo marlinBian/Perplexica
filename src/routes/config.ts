@@ -13,7 +13,7 @@ import {
 
 const router = express.Router();
 
-router.get('/', async (_, res) => {
+router.get('/', async (req, res) => {
   const config = {};
 
   const [chatModelProviders, embeddingModelProviders] = await Promise.all([

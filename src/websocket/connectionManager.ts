@@ -9,6 +9,7 @@ import type { Embeddings } from '@langchain/core/embeddings';
 import type { IncomingMessage } from 'http';
 import logger from '../utils/logger';
 import { ChatOpenAI } from '@langchain/openai';
+import { currentUser } from '../user/loginStatus';
 
 export const handleConnection = async (
   ws: WebSocket,
@@ -18,6 +19,10 @@ export const handleConnection = async (
     const searchParams = new URL(request.url, `http://${request.headers.host}`)
       .searchParams;
 
+    const accessToken = searchParams.get('x-stack-access-token');
+    const refreshToken = searchParams.get('x-stack-refresh-token');
+    const { id } = (await currentUser(accessToken, refreshToken)) as any;
+    const userID = id as string | undefined;
     const [chatModelProviders, embeddingModelProviders] = await Promise.all([
       getAvailableChatModelProviders(),
       getAvailableEmbeddingModelProviders(),
@@ -82,7 +87,7 @@ export const handleConnection = async (
     ws.on(
       'message',
       async (message) =>
-        await handleMessage(message.toString(), ws, llm, embeddings),
+        await handleMessage(userID, message.toString(), ws, llm, embeddings),
     );
 
     ws.on('close', () => logger.debug('Connection closed'));

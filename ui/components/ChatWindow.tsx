@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 import { getSuggestions } from '@/lib/actions';
 import Error from 'next/error';
+import { useUser } from '@stackframe/stack';
+import { getCookie } from 'cookies-next';
 
 export type Message = {
   messageId: string;
@@ -59,7 +61,9 @@ const useSocket = (
             chatModelProvider = Object.keys(chatModelProviders)[0];
 
             if (chatModelProvider === 'custom_openai') {
-              toast.error('Seems like you are using the custom OpenAI provider, please open the settings and configure the API key and base URL');
+              toast.error(
+                'Seems like you are using the custom OpenAI provider, please open the settings and configure the API key and base URL',
+              );
               setError(true);
               return;
             } else {
@@ -157,6 +161,15 @@ const useSocket = (
         searchParams.append('embeddingModel', embeddingModel!);
         searchParams.append('embeddingModelProvider', embeddingModelProvider);
 
+        const accessToken = getCookie('user_access_token');
+        const refreshToken = getCookie('user_refresh_token');
+        console.log(
+          'in websocket, aToken = %s\nrToken = %s',
+          accessToken,
+          refreshToken,
+        );
+        searchParams.append('x-stack-access-token', accessToken || '');
+        searchParams.append('x-stack-refresh-token', refreshToken || '');
         wsURL.search = searchParams.toString();
 
         const ws = new WebSocket(wsURL.toString());
@@ -192,7 +205,7 @@ const useSocket = (
           if (data.type === 'error') {
             toast.error(data.data);
           }
-        })
+        });
 
         setWs(ws);
       };
@@ -259,7 +272,7 @@ const loadMessages = async (
   setIsMessagesLoaded(true);
 };
 
-const ChatWindow = ({ id }: { id?: string }) => {
+const ChatWindow = ({ id, userInfo }: { id?: string; userInfo?: string }) => {
   const searchParams = useSearchParams();
   const initialMessage = searchParams.get('q');
 

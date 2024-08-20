@@ -3,8 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import routes from './routes';
-import { getPort } from './config';
+import { authProjectId, authSecretServerKey, authURL, getPort } from './config';
 import logger from './utils/logger';
+import { currentUser } from './user/loginStatus';
 
 const port = getPort();
 
@@ -17,6 +18,28 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+// 针对特定的path进行认证
+app.use(async (req, res, next) => {
+  // 针对特定的 path 放过认证
+  if (
+    req.path === '/api/models' ||
+    (req.path === '/api/chats' &&
+      req.method === 'GET' &&
+      req.params.id !== undefined)
+  ) {
+    return next();
+  }
+  console.log('headers', req.headers);
+  const accessToken = req.header('x-stack-access-token');
+  const refreshToken = req.header('x-stack-refresh-token');
+  const { id } = (await currentUser(accessToken, refreshToken)) as any;
+
+  req.loginStatus = {
+    isLoggedIn: true,
+    userId: id,
+  };
+  return next();
+});
 
 app.use('/api', routes);
 app.get('/api', (_, res) => {

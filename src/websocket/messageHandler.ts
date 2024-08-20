@@ -97,6 +97,7 @@ const handleEmitterEvents = (
 };
 
 export const handleMessage = async (
+  userID: string | undefined,
   message: string,
   ws: WebSocket,
   llm: BaseChatModel,
@@ -151,6 +152,7 @@ export const handleMessage = async (
             .insert(chats)
             .values({
               id: parsedMessage.chatId,
+              userID: userID,
               title: parsedMessage.content,
               createdAt: new Date().toString(),
               focusMode: parsedWSMessage.focusMode,

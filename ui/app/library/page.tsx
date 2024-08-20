@@ -5,6 +5,8 @@ import { formatTimeDifference } from '@/lib/utils';
 import { BookOpenText, ClockIcon, Delete, ScanEye } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useUser } from '@stackframe/stack';
+import { getCookie } from 'cookies-next';
 
 export interface Chat {
   id: string;
@@ -14,6 +16,7 @@ export interface Chat {
 }
 
 const Page = () => {
+  const user = useUser({ or: 'redirect' });
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,10 +24,14 @@ const Page = () => {
     const fetchChats = async () => {
       setLoading(true);
 
+      const accessToken = getCookie('user_access_token');
+      const refreshToken = getCookie('user_refresh_token');
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chats`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'x-stack-access-token': accessToken || '',
+          'x-stack-refresh-token': refreshToken || '',
         },
       });
 
