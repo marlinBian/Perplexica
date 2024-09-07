@@ -1,0 +1,18 @@
+[API_KEYS]
+OPENAI = ""
+GROQ = "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"
+ANTHROPIC = ""
+
+[API_ENDPOINTS]
+OLLAMA = ""
+SEARXNG = "http://localhost:4000"
+
+[GENERAL]
+PORT = 3001
+SIMILARITY_MEASURE = "cosine"
+
+[AUTH]
+ENDPOINT = "https://api.stack-auth.com/api/v1/users/me"
+NEXT_PUBLIC_STACK_PROJECT_ID = "cbb2b379-56bb-4d94-be0c-eed8cd81d160"
+NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY = "pck_v2rk3jg7tzc6f7gmb18e9n1zhnt5t22bpjaxj48c19r1g"
+STACK_SECRET_SERVER_KEY = "ssk_7gfxytk6sbmxnrc0e4kca7hprtc9a0k6q3pjckf1xj14g"
