@@ -13,6 +13,7 @@ import db from '../db';
 import { chats, messages } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import handlePsychCounselingAssist from '../agents/psychCounselingAssist';
 
 type Message = {
   messageId: string;
@@ -35,6 +36,7 @@ const searchHandlers = {
   wolframAlphaSearch: handleWolframAlphaSearch,
   youtubeSearch: handleYoutubeSearch,
   redditSearch: handleRedditSearch,
+  psychAssistant: handlePsychCounselingAssist,
 };
 
 const handleEmitterEvents = (

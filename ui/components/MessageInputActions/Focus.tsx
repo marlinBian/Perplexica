@@ -5,6 +5,7 @@ import {
   Pencil,
   ScanEye,
   SwatchBook,
+  MessageSquareDiff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, Transition } from '@headlessui/react';
@@ -17,6 +18,12 @@ const focusModes = [
     title: 'All',
     description: 'Searches across all of the internet',
     icon: <Globe size={20} />,
+  },
+  {
+    key: 'psychAssistant',
+    title: 'Counselor',
+    description: 'Chat with a therapist',
+    icon: <MessageSquareDiff size={20} />,
   },
   {
     key: 'academicSearch',

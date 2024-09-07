@@ -7,6 +7,7 @@
     "start": "npm run db:push && node dist/app.js",
     "build": "tsc",
     "dev": "nodemon src/app.ts",
+    "dev-proxy": "cross-env HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 nodemon src/app.ts",
     "db:push": "drizzle-kit push sqlite",
     "format": "prettier . --check",
     "format:write": "prettier . --write"
@@ -35,6 +36,7 @@
     "compute-cosine-similarity": "^1.1.0",
     "compute-dot": "^1.1.0",
     "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.31.2",
     "express": "^4.19.2",
