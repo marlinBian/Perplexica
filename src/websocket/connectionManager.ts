@@ -10,37 +10,70 @@ import type { IncomingMessage } from 'http';
 import logger from '../utils/logger';
 import { ChatOpenAI } from '@langchain/openai';
 import { currentUser } from '../user/loginStatus';
+import jwt from 'jsonwebtoken';
+import { wxJwtToken } from '../config';
 
 export const handleConnection = async (
   ws: WebSocket,
   request: IncomingMessage,
 ) => {
   try {
-    const searchParams = new URL(request.url, `http://${request.headers.host}`)
-      .searchParams;
-
-    const accessToken = searchParams.get('x-stack-access-token');
-    const refreshToken = searchParams.get('x-stack-refresh-token');
-    const { id } = (await currentUser(accessToken, refreshToken)) as any;
-    const userID = id as string | undefined;
+    let userID: string
+    let chatModelProvider
+    let chatModel
+    let embeddingModelProvider
+    let embeddingModel
+    let openAIApiKey 
+    let openAIBaseURL
     const [chatModelProviders, embeddingModelProviders] = await Promise.all([
       getAvailableChatModelProviders(),
       getAvailableEmbeddingModelProviders(),
     ]);
 
-    const chatModelProvider =
-      searchParams.get('chatModelProvider') ||
-      Object.keys(chatModelProviders)[0];
-    const chatModel =
-      searchParams.get('chatModel') ||
-      Object.keys(chatModelProviders[chatModelProvider])[0];
+    if ((request.headers['request-type'] as string) === 'wx') {
+      const token = (request.headers['x-wxmini-access-token'] as string)
+      const decoded = jwt.verify(token, wxJwtToken())
+      userID = (decoded as any).openid
+      
+      chatModelProvider = Object.keys(chatModelProviders)[0];
 
-    const embeddingModelProvider =
-      searchParams.get('embeddingModelProvider') ||
-      Object.keys(embeddingModelProviders)[0];
-    const embeddingModel =
-      searchParams.get('embeddingModel') ||
-      Object.keys(embeddingModelProviders[embeddingModelProvider])[0];
+      chatModel =  Object.keys(chatModelProviders[chatModelProvider])[0];
+
+      embeddingModelProvider = Object.keys(embeddingModelProviders)[0];
+      
+      embeddingModel = Object.keys(embeddingModelProviders[embeddingModelProvider])[0];
+      
+    } else {
+      const url = new URL(request.url, `http://${request.headers.host}`)
+      const searchParams = url.searchParams;
+
+      const accessToken = searchParams.get('x-stack-access-token');
+      const refreshToken = searchParams.get('x-stack-refresh-token');
+      const { id } = (await currentUser(accessToken, refreshToken)) as any;
+      userID = id as string | undefined;
+
+      chatModelProvider = searchParams.get('chatModelProvider') || Object.keys(chatModelProviders)[0];
+
+      chatModel = searchParams.get('chatModel') || Object.keys(chatModelProviders[chatModelProvider])[0];
+
+      embeddingModelProvider = searchParams.get('embeddingModelProvider') || Object.keys(embeddingModelProviders)[0];
+      
+      embeddingModel = searchParams.get('embeddingModel') || Object.keys(embeddingModelProviders[embeddingModelProvider])[0];
+      
+      openAIApiKey = searchParams.get('openAIApiKey')
+      openAIBaseURL = searchParams.get('openAIBaseURL')
+    }
+    if (!userID){
+      ws.send(
+        JSON.stringify({
+          type: 'error',
+          data: 'no user id',
+          key: 'INVALID_NO_USERID',
+        }),
+      );
+      ws.close();
+      return
+    }
 
     let llm: BaseChatModel | undefined;
     let embeddings: Embeddings | undefined;
@@ -56,10 +89,10 @@ export const handleConnection = async (
     } else if (chatModelProvider == 'custom_openai') {
       llm = new ChatOpenAI({
         modelName: chatModel,
-        openAIApiKey: searchParams.get('openAIApiKey'),
+        openAIApiKey: openAIApiKey,
         temperature: 0.7,
         configuration: {
-          baseURL: searchParams.get('openAIBaseURL'),
+          baseURL: openAIBaseURL,
         },
       }) as unknown as BaseChatModel;
     }

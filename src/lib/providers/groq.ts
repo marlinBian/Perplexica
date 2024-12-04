@@ -1,6 +1,8 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { getGroqApiKey } from '../../config';
 import logger from '../../utils/logger';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import fetch from 'node-fetch';
 
 export const loadGroqChatModels = async () => {
   const groqApiKey = getGroqApiKey();
@@ -17,6 +19,8 @@ export const loadGroqChatModels = async () => {
         },
         {
           baseURL: 'https://api.groq.com/openai/v1',
+          httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+          fetch
         },
       ),
       'Llama 3.1 8B': new ChatOpenAI(
@@ -27,6 +31,8 @@ export const loadGroqChatModels = async () => {
         },
         {
           baseURL: 'https://api.groq.com/openai/v1',
+          httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+          fetch
         },
       ),
       'LLaMA3 8b': new ChatOpenAI(
@@ -37,6 +43,8 @@ export const loadGroqChatModels = async () => {
         },
         {
           baseURL: 'https://api.groq.com/openai/v1',
+          httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+          fetch
         },
       ),
       'LLaMA3 70b': new ChatOpenAI(
@@ -47,6 +55,8 @@ export const loadGroqChatModels = async () => {
         },
         {
           baseURL: 'https://api.groq.com/openai/v1',
+          httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+          fetch
         },
       ),
       'Mixtral 8x7b': new ChatOpenAI(
@@ -57,6 +67,8 @@ export const loadGroqChatModels = async () => {
         },
         {
           baseURL: 'https://api.groq.com/openai/v1',
+          httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+          fetch
         },
       ),
       'Gemma 7b': new ChatOpenAI(
@@ -67,6 +79,8 @@ export const loadGroqChatModels = async () => {
         },
         {
           baseURL: 'https://api.groq.com/openai/v1',
+          httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+          fetch
         },
       ),
       'Gemma2 9b': new ChatOpenAI(
@@ -77,6 +91,8 @@ export const loadGroqChatModels = async () => {
         },
         {
           baseURL: 'https://api.groq.com/openai/v1',
+          httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+          fetch
         },
       ),
     };

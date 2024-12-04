@@ -70,10 +70,8 @@ const handleEmitterEvents = (
       sources = parsedData.data;
     }
   });
-  emitter.on('end', () => {
-    ws.send(JSON.stringify({ type: 'messageEnd', messageId: messageId }));
-
-    db.insert(messages)
+  emitter.on('end', async () => {
+    const insertId:{id:number}[] = await db.insert(messages)
       .values({
         content: recievedMessage,
         chatId: chatId,
@@ -83,8 +81,8 @@ const handleEmitterEvents = (
           createdAt: new Date(),
           ...(sources && sources.length > 0 && { sources }),
         }),
-      })
-      .execute();
+      }).returning({ id: messages.id });
+    ws.send(JSON.stringify({ type: 'messageEnd', messageId: messageId, id: insertId[0].id }));
   });
   emitter.on('error', (data) => {
     const parsedData = JSON.parse(data);
@@ -115,7 +113,7 @@ export const handleMessage = async (
       return ws.send(
         JSON.stringify({
           type: 'error',
-          data: 'Invalid message format',
+          data: 'Invalid message format 456',
           key: 'INVALID_FORMAT',
         }),
       );
@@ -134,7 +132,6 @@ export const handleMessage = async (
 
     if (parsedWSMessage.type === 'message') {
       const handler = searchHandlers[parsedWSMessage.focusMode];
-
       if (handler) {
         const emitter = handler(
           parsedMessage.content,
@@ -161,19 +158,28 @@ export const handleMessage = async (
             })
             .execute();
         }
+/*
 
-        await db
-          .insert(messages)
+     * const insertedCarId: { id: number }[] = await db.insert(cars)
+     *   .values({ brand: 'BMW' })
+     *   .returning({ id: cars.id });
+ */
+        const insertId:{id:number}[] = await db.insert(messages)
           .values({
             content: parsedMessage.content,
             chatId: parsedMessage.chatId,
-            messageId: id,
+            messageId: parsedMessage.messageId,
             role: 'user',
             metadata: JSON.stringify({
               createdAt: new Date(),
             }),
-          })
-          .execute();
+          }).returning({ id: messages.id });
+
+        ws.send(JSON.stringify({
+          type: 'user-message',
+          id: insertId[0].id,
+          messageId: parsedMessage.messageId,
+        }))
       } else {
         ws.send(
           JSON.stringify({
@@ -188,7 +194,7 @@ export const handleMessage = async (
     ws.send(
       JSON.stringify({
         type: 'error',
-        data: 'Invalid message format',
+        data: 'Invalid message format 123',
         key: 'INVALID_FORMAT',
       }),
     );

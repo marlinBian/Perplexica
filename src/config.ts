@@ -24,6 +24,18 @@ interface Config {
     NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: string;
     STACK_SECRET_SERVER_KEY: string;
   };
+  WX: {
+    CODE2SESSION_ENDPOINT:string;
+    MINI_APP_ID:string;
+    MINI_APP_SECRET:string;
+  };
+  STACK_AUTH:{
+    HOST:string;
+    USER_PATH:string;
+  };
+  WX_TOKEN:{
+    JWT_SECRET:string;
+  }
 }
 
 type RecursivePartial<T> = {
@@ -78,9 +90,19 @@ export const updateConfig = (config: RecursivePartial<Config>) => {
 };
 
 export const authURL = () => loadConfig().AUTH.ENDPOINT;
-export const authProjectId = () =>
-  loadConfig().AUTH.NEXT_PUBLIC_STACK_PROJECT_ID;
-export const authPublishableClientKey = () =>
-  loadConfig().AUTH.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY;
-export const authSecretServerKey = () =>
-  loadConfig().AUTH.STACK_SECRET_SERVER_KEY;
+
+export const authProjectId = () => loadConfig().AUTH.NEXT_PUBLIC_STACK_PROJECT_ID;
+
+export const authPublishableClientKey = () => loadConfig().AUTH.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY;
+
+export const authSecretServerKey = () => loadConfig().AUTH.STACK_SECRET_SERVER_KEY;
+
+export const wxCode2SessionURL = () => loadConfig().WX.CODE2SESSION_ENDPOINT
+
+export const wxMiniAppID = () => loadConfig().WX.MINI_APP_ID
+
+export const wxMiniAppSecret = () => loadConfig().WX.MINI_APP_SECRET
+
+export const stackUserPath = () => loadConfig().STACK_AUTH.HOST + loadConfig().STACK_AUTH.USER_PATH
+
+export const wxJwtToken = () => loadConfig().WX_TOKEN.JWT_SECRET
