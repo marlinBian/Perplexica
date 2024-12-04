@@ -48,10 +48,10 @@ jobs:
             IMAGE_NAME=perplexica-frontend; \
           fi
           docker buildx build --platform linux/amd64,linux/arm64 \
-            --cache-from=type=registry,ref=itzcrazykns1337/${IMAGE_NAME}:main \
+            --cache-from=type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:main \
             --cache-to=type=inline \
             -f $DOCKERFILE \
-            -t itzcrazykns1337/${IMAGE_NAME}:main \
+            -t ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:main \
             --push .
 
       - name: Build and push release Docker image for ${{ matrix.service }}
@@ -66,8 +66,8 @@ jobs:
             IMAGE_NAME=perplexica-frontend; \
           fi
           docker buildx build --platform linux/amd64,linux/arm64 \
-            --cache-from=type=registry,ref=itzcrazykns1337/${IMAGE_NAME}:${{ env.RELEASE_VERSION }} \
+            --cache-from=type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:${{ env.RELEASE_VERSION }} \
             --cache-to=type=inline \
             -f $DOCKERFILE \
-            -t itzcrazykns1337/${IMAGE_NAME}:${{ env.RELEASE_VERSION }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/${IMAGE_NAME}:${{ env.RELEASE_VERSION }} \
             --push .
