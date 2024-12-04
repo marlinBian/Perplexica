@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 
 import { text, integer, sqliteTable,index,real } from 'drizzle-orm/sqlite-core';
 
@@ -11,6 +12,16 @@ export const messages = sqliteTable('messages', {
   metadata: text('metadata', { mode: 'json' }),
 });
 
+interface File {
+  name: string;
+  fileId: string;
+}
+
+interface File {
+  name: string;
+  fileId: string;
+}
+
 // userID 与 userType 搭配使用
 // userType 为 wx 时，userID 为对应的 openID 
 // userType 为 stack 时，则说明使用 stack 进行了 user 管理
@@ -21,6 +32,9 @@ export const chats = sqliteTable('chats', {
   title: text('title').notNull(),
   createdAt: text('createdAt').notNull(),
   focusMode: text('focusMode').notNull(),
+  files: text('files', { mode: 'json' })
+    .$type<File[]>()
+    .default(sql`'[]'`),
 });
 
 // 微信用户基本信息

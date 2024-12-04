@@ -1,5 +1,11 @@
 import { cn } from '@/lib/utils';
-import { Dialog, Transition } from '@headlessui/react';
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react';
 import { CloudUpload, RefreshCcw, RefreshCw } from 'lucide-react';
 import React, {
   Fragment,
@@ -51,14 +57,15 @@ export const Select = ({ className, options, ...restProps }: SelectProps) => {
 
 interface SettingsType {
   chatModelProviders: {
-    [key: string]: string[];
+    [key: string]: [Record<string, any>];
   };
   embeddingModelProviders: {
-    [key: string]: string[];
+    [key: string]: [Record<string, any>];
   };
   openaiApiKey: string;
   groqApiKey: string;
   anthropicApiKey: string;
+  geminiApiKey: string;
   ollamaApiUrl: string;
 }
 
@@ -76,6 +83,10 @@ const SettingsDialog = ({
     return null;
   }
   const [config, setConfig] = useState<SettingsType | null>(null);
+  const [chatModels, setChatModels] = useState<Record<string, any>>({});
+  const [embeddingModels, setEmbeddingModels] = useState<Record<string, any>>(
+    {},
+  );
   const [selectedChatModelProvider, setSelectedChatModelProvider] = useState<
     string | null
   >(null);
@@ -130,7 +141,9 @@ const SettingsDialog = ({
         const chatModel =
           localStorage.getItem('chatModel') ||
           (data.chatModelProviders &&
-            data.chatModelProviders[chatModelProvider]?.[0]) ||
+          data.chatModelProviders[chatModelProvider]?.length > 0
+            ? data.chatModelProviders[chatModelProvider][0].name
+            : undefined) ||
           '';
         const embeddingModelProvider =
           localStorage.getItem('embeddingModelProvider') ||
@@ -139,7 +152,7 @@ const SettingsDialog = ({
         const embeddingModel =
           localStorage.getItem('embeddingModel') ||
           (data.embeddingModelProviders &&
-            data.embeddingModelProviders[embeddingModelProvider]?.[0]) ||
+            data.embeddingModelProviders[embeddingModelProvider]?.[0].name) ||
           '';
 
         setSelectedChatModelProvider(chatModelProvider);
@@ -148,6 +161,8 @@ const SettingsDialog = ({
         setSelectedEmbeddingModel(embeddingModel);
         setCustomOpenAIApiKey(localStorage.getItem('openAIApiKey') || '');
         setCustomOpenAIBaseURL(localStorage.getItem('openAIBaseURL') || '');
+        setChatModels(data.chatModelProviders || {});
+        setEmbeddingModels(data.embeddingModelProviders || {});
         setIsLoading(false);
       };
 
@@ -194,7 +209,7 @@ const SettingsDialog = ({
         className="relative z-50"
         onClose={() => setIsOpen(false)}
       >
-        <Transition.Child
+        <TransitionChild
           as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
@@ -204,10 +219,10 @@ const SettingsDialog = ({
           leaveTo="opacity-0"
         >
           <div className="fixed inset-0 bg-white/50 dark:bg-black/50" />
-        </Transition.Child>
+        </TransitionChild>
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
+            <TransitionChild
               as={Fragment}
               enter="ease-out duration-200"
               enterFrom="opacity-0 scale-95"
@@ -216,10 +231,10 @@ const SettingsDialog = ({
               leaveFrom="opacity-100 scale-200"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform rounded-2xl bg-light-secondary dark:bg-dark-secondary border border-light-200 dark:border-dark-200 p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title className="text-xl font-medium leading-6 dark:text-white">
+              <DialogPanel className="w-full max-w-md transform rounded-2xl bg-light-secondary dark:bg-dark-secondary border border-light-200 dark:border-dark-200 p-6 text-left align-middle shadow-xl transition-all">
+                <DialogTitle className="text-xl font-medium leading-6 dark:text-white">
                   Settings
-                </Dialog.Title>
+                </DialogTitle>
                 {config && !isLoading && (
                   <div className="flex flex-col space-y-4 mt-6">
                     <div className="flex flex-col space-y-1">
@@ -241,7 +256,8 @@ const SettingsDialog = ({
                               setSelectedChatModel('');
                             } else {
                               setSelectedChatModel(
-                                config.chatModelProviders[e.target.value][0],
+                                config.chatModelProviders[e.target.value][0]
+                                  .name,
                               );
                             }
                           }}
@@ -276,8 +292,8 @@ const SettingsDialog = ({
                               return chatModelProvider
                                 ? chatModelProvider.length > 0
                                   ? chatModelProvider.map((model) => ({
-                                      value: model,
-                                      label: model,
+                                      value: model.name,
+                                      label: model.displayName,
                                     }))
                                   : [
                                       {
@@ -353,7 +369,8 @@ const SettingsDialog = ({
                           onChange={(e) => {
                             setSelectedEmbeddingModelProvider(e.target.value);
                             setSelectedEmbeddingModel(
-                              config.embeddingModelProviders[e.target.value][0],
+                              config.embeddingModelProviders[e.target.value][0]
+                                .name,
                             );
                           }}
                           options={Object.keys(
@@ -386,8 +403,8 @@ const SettingsDialog = ({
                             return embeddingModelProvider
                               ? embeddingModelProvider.length > 0
                                 ? embeddingModelProvider.map((model) => ({
-                                    label: model,
-                                    value: model,
+                                    label: model.displayName,
+                                    value: model.name,
                                   }))
                                 : [
                                     {
@@ -472,6 +489,22 @@ const SettingsDialog = ({
                         }
                       />
                     </div>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-black/70 dark:text-white/70 text-sm">
+                        Gemini API Key
+                      </p>
+                      <Input
+                        type="text"
+                        placeholder="Gemini API key"
+                        defaultValue={config.geminiApiKey}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            geminiApiKey: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 )}
                 {isLoading && (
@@ -495,8 +528,8 @@ const SettingsDialog = ({
                     )}
                   </button>
                 </div>
-              </Dialog.Panel>
-            </Transition.Child>
+              </DialogPanel>
+            </TransitionChild>
           </div>
         </div>
       </Dialog>
