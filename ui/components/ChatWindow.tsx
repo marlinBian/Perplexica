@@ -21,6 +21,12 @@ export type Message = {
   sources?: Document[];
 };
 
+export interface File {
+  fileName: string;
+  fileExtension: string;
+  fileId: string;
+}
+
 const useSocket = (
   url: string,
   setIsWSReady: (ready: boolean) => void,
@@ -59,7 +65,9 @@ const useSocket = (
             chatModelProvider = Object.keys(chatModelProviders)[0];
 
             if (chatModelProvider === 'custom_openai') {
-              toast.error('Seems like you are using the custom OpenAI provider, please open the settings and configure the API key and base URL');
+              toast.error(
+                'Seems like you are using the custom OpenAI provider, please open the settings and configure the API key and base URL',
+              );
               setError(true);
               return;
             } else {
@@ -169,11 +177,22 @@ const useSocket = (
           }
         }, 10000);
 
-        ws.onopen = () => {
-          console.log('[DEBUG] open');
-          clearTimeout(timeoutId);
-          setIsWSReady(true);
-        };
+        ws.addEventListener('message', (e) => {
+          const data = JSON.parse(e.data);
+          if (data.type === 'signal' && data.data === 'open') {
+            const interval = setInterval(() => {
+              if (ws.readyState === 1) {
+                setIsWSReady(true);
+                clearInterval(interval);
+              }
+            }, 5);
+            clearTimeout(timeoutId);
+            console.log('[DEBUG] opened');
+          }
+          if (data.type === 'error') {
+            toast.error(data.data);
+          }
+        });
 
         ws.onerror = () => {
           clearTimeout(timeoutId);
@@ -187,25 +206,11 @@ const useSocket = (
           console.log('[DEBUG] closed');
         };
 
-        ws.addEventListener('message', (e) => {
-          const data = JSON.parse(e.data);
-          if (data.type === 'error') {
-            toast.error(data.data);
-          }
-        })
-
         setWs(ws);
       };
 
       connectWs();
     }
-
-    return () => {
-      if (ws?.readyState === 1) {
-        ws?.close();
-        console.log('[DEBUG] closed');
-      }
-    };
   }, [ws, url, setIsWSReady, setError]);
 
   return ws;
@@ -218,6 +223,8 @@ const loadMessages = async (
   setChatHistory: (history: [string, string][]) => void,
   setFocusMode: (mode: string) => void,
   setNotFound: (notFound: boolean) => void,
+  setFiles: (files: File[]) => void,
+  setFileIds: (fileIds: string[]) => void,
 ) => {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/chats/${chatId}`,
@@ -254,6 +261,17 @@ const loadMessages = async (
 
   document.title = messages[0].content;
 
+  const files = data.chat.files.map((file: any) => {
+    return {
+      fileName: file.name,
+      fileExtension: file.name.split('.').pop(),
+      fileId: file.fileId,
+    };
+  });
+
+  setFiles(files);
+  setFileIds(files.map((file: File) => file.fileId));
+
   setChatHistory(history);
   setFocusMode(data.chat.focusMode);
   setIsMessagesLoaded(true);
@@ -282,7 +300,11 @@ const ChatWindow = ({ id }: { id?: string }) => {
   const [chatHistory, setChatHistory] = useState<[string, string][]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
 
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileIds, setFileIds] = useState<string[]>([]);
+
   const [focusMode, setFocusMode] = useState('webSearch');
+  const [optimizationMode, setOptimizationMode] = useState('speed');
 
   const [isMessagesLoaded, setIsMessagesLoaded] = useState(false);
 
@@ -302,12 +324,24 @@ const ChatWindow = ({ id }: { id?: string }) => {
         setChatHistory,
         setFocusMode,
         setNotFound,
+        setFiles,
+        setFileIds,
       );
     } else if (!chatId) {
       setNewChatCreated(true);
       setIsMessagesLoaded(true);
       setChatId(crypto.randomBytes(20).toString('hex'));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (ws?.readyState === 1) {
+        ws.close();
+        console.log('[DEBUG] closed');
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -320,11 +354,13 @@ const ChatWindow = ({ id }: { id?: string }) => {
   useEffect(() => {
     if (isMessagesLoaded && isWSReady) {
       setIsReady(true);
+      console.log('[DEBUG] ready');
     }
   }, [isMessagesLoaded, isWSReady]);
 
-  const sendMessage = async (message: string) => {
+  const sendMessage = async (message: string, messageId?: string) => {
     if (loading) return;
+
     setLoading(true);
     setMessageAppeared(false);
 
@@ -332,16 +368,19 @@ const ChatWindow = ({ id }: { id?: string }) => {
     let recievedMessage = '';
     let added = false;
 
-    const messageId = crypto.randomBytes(7).toString('hex');
+    messageId = messageId ?? crypto.randomBytes(7).toString('hex');
 
     ws?.send(
       JSON.stringify({
         type: 'message',
         message: {
+          messageId: messageId,
           chatId: chatId!,
           content: message,
         },
+        files: fileIds,
         focusMode: focusMode,
+        optimizationMode: optimizationMode,
         history: [...chatHistory, ['human', message]],
       }),
     );
@@ -463,15 +502,15 @@ const ChatWindow = ({ id }: { id?: string }) => {
       return [...prev.slice(0, messages.length > 2 ? index - 1 : 0)];
     });
 
-    sendMessage(message.content);
+    sendMessage(message.content, message.messageId);
   };
 
   useEffect(() => {
-    if (isReady && initialMessage) {
+    if (isReady && initialMessage && ws?.readyState === 1) {
       sendMessage(initialMessage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, initialMessage]);
+  }, [ws?.readyState, isReady, initialMessage, isWSReady]);
 
   if (hasError) {
     return (
@@ -490,13 +529,17 @@ const ChatWindow = ({ id }: { id?: string }) => {
       <div>
         {messages.length > 0 ? (
           <>
-            <Navbar messages={messages} />
+            <Navbar chatId={chatId!} messages={messages} />
             <Chat
               loading={loading}
               messages={messages}
               sendMessage={sendMessage}
               messageAppeared={messageAppeared}
               rewrite={rewrite}
+              fileIds={fileIds}
+              setFileIds={setFileIds}
+              files={files}
+              setFiles={setFiles}
             />
           </>
         ) : (
@@ -504,6 +547,12 @@ const ChatWindow = ({ id }: { id?: string }) => {
             sendMessage={sendMessage}
             focusMode={focusMode}
             setFocusMode={setFocusMode}
+            optimizationMode={optimizationMode}
+            setOptimizationMode={setOptimizationMode}
+            fileIds={fileIds}
+            setFileIds={setFileIds}
+            files={files}
+            setFiles={setFiles}
           />
         )}
       </div>
