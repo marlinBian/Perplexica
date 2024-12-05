@@ -57,6 +57,7 @@ jobs:
             # 检查目录是否已存在
             if [ ! -d "/data" ]; then
               mkdir -p "/data"
+            fi
           EOF
           scp -i private_key.pem docker-compose-prod.yml $ECS_USER@$ECS_IP:/data/
           scp -i private_key.pem .tmp.env $ECS_USER@$ECS_IP:/data/.env
