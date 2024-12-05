@@ -59,9 +59,7 @@ jobs:
               mkdir -p "/data"
             fi
           EOF
-          echo "Listing files in the dist directory:"
-          ls -al 
-          scp -i private_key.pem docker-compose-prod.yml $ECS_USER@$ECS_IP:/data/
+          scp -i private_key.pem docker-compose-prod.yaml $ECS_USER@$ECS_IP:/data/docker-compose.yaml
           scp -i private_key.pem .tmp.env $ECS_USER@$ECS_IP:/data/.env
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
             cd /data
