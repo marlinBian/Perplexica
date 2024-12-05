@@ -36,7 +36,7 @@ jobs:
               else
                   echo "Docker 已安装，版本为：$(docker --version)"
               fi
-          EOF      
+            EOF      
   build-and-push:
     needs: [confirm-ecs]
     runs-on: ubuntu-latest
