@@ -517,8 +517,7 @@ const ChatWindow = ({ id, userInfo }: { id?: string; userInfo?: string }) => {
     const index = messages.findIndex((msg) => msg.messageId === messageId);
 
     if (index === -1) return;
-
-    const message = messages[index - 1];
+    const message = messages[index === 0 ? 0 : index -1];
 
     setMessages((prev) => {
       return [...prev.slice(0, messages.length > 2 ? index - 1 : 0)];

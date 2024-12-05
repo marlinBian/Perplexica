@@ -17,6 +17,8 @@ import {
   youtubeSearchRetrieverPrompt,
 } from './youtubeSearch';
 
+import { psychAssistantPrompt }from './psychAssistant';
+
 export default {
   webSearchResponsePrompt,
   webSearchRetrieverPrompt,
@@ -29,4 +31,5 @@ export default {
   writingAssistantPrompt,
   youtubeSearchResponsePrompt,
   youtubeSearchRetrieverPrompt,
+  psychAssistantPrompt,
 };

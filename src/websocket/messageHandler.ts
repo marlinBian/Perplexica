@@ -7,7 +7,6 @@ import db from '../db';
 import { chats, messages as messagesSchema } from '../db/schema';
 import { eq, asc, gt } from 'drizzle-orm';
 import crypto from 'crypto';
-import handlePsychCounselingAssist from '../agents/psychCounselingAssist';
 import { getFileDetails } from '../utils/files';
 import MetaSearchAgent, {
   MetaSearchAgentType,
@@ -84,7 +83,15 @@ export const searchHandlers = {
     searchWeb: true,
     summarizer: false,
   }),
-  psychAssistant: handlePsychCounselingAssist,
+  psychAssistant: new MetaSearchAgent({
+    activeEngines: [],
+    queryGeneratorPrompt: '',
+    responsePrompt: prompts.psychAssistantPrompt,
+    rerank: true,
+    rerankThreshold: 0,
+    searchWeb: false,
+    summarizer: false,
+  }),
 };
 const handleEmitterEvents = (
   emitter: EventEmitter,

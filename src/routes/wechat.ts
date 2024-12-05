@@ -106,6 +106,7 @@ router.get('/chat', async (req, res) => {
             title: `${userID} 的聊天框`,
             createdAt: new Date().toString(),
             focusMode: 'psychAssistant',
+            files:[],
         }
         await db.insert(chats).values(chat).execute();
     }
