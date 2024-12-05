@@ -63,5 +63,6 @@ jobs:
           scp -i private_key.pem .tmp.env $ECS_USER@$ECS_IP:/data/.env
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
             cd /data
-            docker-compose up -d 
+            docker compose down
+            docker compose up -d 
           EOF
