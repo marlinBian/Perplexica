@@ -8,7 +8,7 @@ on:
       types: [published]
 
 jobs:
-  confirm-ecs:
+  confirm-ecs-install-docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -37,14 +37,30 @@ jobs:
                   echo "Docker 已安装，版本为：$(docker --version)"
               fi
           EOF
-  build-and-push:
-    needs: [confirm-ecs]
+
+  ecs-start-docker-compose:
+    needs: [confirm-ecs-install-docker]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [backend, app]
     steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
-            
-        
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Upload and execute compose file to ecs
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
+          ECS_IP: ${{ secrets.ECS_IP }}
+          ECS_USER: ${{ secrets.ECS_USER }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          echo "DOCKER_USERNAME=${{ vars.DOCKER_USERNAME }}" > .tmp.env
+          chmod 600 private_key.pem
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
+            # 检查目录是否已存在
+            if [ ! -d "/data" ]; then
+              mkdir -p "/data"
+          EOF
+          scp -i private_key.pem docker-compose-prod.yml $ECS_USER@$ECS_IP:/data/
+          scp -i private_key.pem .tmp.env $ECS_USER@$ECS_IP:/data/.env
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
+            cd /data
+            docker-compose up -d 
+          EOF
