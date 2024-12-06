@@ -33,6 +33,7 @@ jobs:
                 mkdir /etc/clash
                 mv config.yaml /etc/clash/
                 tar -zxvf clash.tar.gz
+                chmod u+x clash/clash
                 mv clash/clash.service /etc/systemd/system/
                 mv clash/clash /usr/local/bin/
                 mv clash/Country.mmdb /etc/clash/
