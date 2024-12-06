@@ -42,42 +42,37 @@ jobs:
           if ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP "systemctl is-active --quiet clash"; then
             echo "服务 clash 正在运行"
           else
+            echo "开始安装 clash"
             scp -i private_key.pem .reference/clash.tar.gz $ECS_USER@$ECS_IP:/tmp/clash.tar.gz
             scp -i private_key.pem .reference/config.yaml $ECS_USER@$ECS_IP:/tmp/config.yaml
             ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
-              cd /tmp
-              mkdir /etc/clash
-              mv config.yaml /etc/clash/
-              tar -zxvf clash.tar.gz
-              mv clash/clash.service /etc/systemd/system/
-              mv clash/clash /usr/local/bin/
-              mv clash/Country.mmdb /etc/clash/
-              rm -fr clash
-              
-              systemctl enable clash
-              systemctl start clash
-              echo "clash 安装完成."
-              
-              sudo sed -i '/\[Service\]/a Environment="HTTP_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
-              sudo sed -i '/\[Service\]/a Environment="HTTPS_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
-              systemctl daemon-reload
-              systemctl restart docker
-              echo "docker 配置 proxy 完成."
+                cd /tmp
+                mkdir /etc/clash
+                mv config.yaml /etc/clash/
+                tar -zxvf clash.tar.gz
+                mv clash/clash.service /etc/systemd/system/
+                mv clash/clash /usr/local/bin/
+                mv clash/Country.mmdb /etc/clash/
+                rm -fr clash
+                
+                systemctl enable clash
+                systemctl start clash
+                echo "clash 安装完成."
             EOF
           fi
           # 更新 docker 的 proxy
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
-            # 使用grep检查环境变量是否存在
-            ENV_VARIABLE='Environment=\"HTTP_PROXY=http://127.0.0.1:7890\"'
-            if grep -q "$ENV_VARIABLE" /lib/systemd/system/docker.service; then
-              echo "docker 已配置 proxy"
-            else
-              sudo sed -i '/\[Service\]/a Environment="HTTP_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
-              sudo sed -i '/\[Service\]/a Environment="HTTPS_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
-              systemctl daemon-reload
-              systemctl restart docker
-              echo "docker 配置 proxy 完成."
-            fi
+              # 使用grep检查环境变量是否存在
+              ENV_VARIABLE='Environment=\"HTTP_PROXY=http://127.0.0.1:7890\"'
+              if grep -q "$ENV_VARIABLE" /lib/systemd/system/docker.service; then
+                echo "docker 已配置 proxy"
+              else
+                sudo sed -i '/\[Service\]/a Environment="HTTP_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
+                sudo sed -i '/\[Service\]/a Environment="HTTPS_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
+                systemctl daemon-reload
+                systemctl restart docker
+                echo "docker 配置 proxy 完成."
+              fi
           EOF
     
   ecs-start-docker-compose:
