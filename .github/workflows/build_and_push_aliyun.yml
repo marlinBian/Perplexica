@@ -64,15 +64,15 @@ jobs:
           # 更新 docker 的 proxy
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
               # 使用grep检查环境变量是否存在
-              ENV_VARIABLE='Environment=\"HTTP_PROXY=http://127.0.0.1:7890\"'
+              ENV_VARIABLE='Environment="HTTP_PROXY=http://127.0.0.1:7890"'
               if grep -q "$ENV_VARIABLE" /lib/systemd/system/docker.service; then
-                echo "docker 已配置 proxy"
-              else
                 sudo sed -i '/\[Service\]/a Environment="HTTP_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
                 sudo sed -i '/\[Service\]/a Environment="HTTPS_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
                 systemctl daemon-reload
                 systemctl restart docker
                 echo "docker 配置 proxy 完成."
+              else
+                echo "docker 已配置 proxy"
               fi
           EOF
 
