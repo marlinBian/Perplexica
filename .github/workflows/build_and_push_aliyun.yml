@@ -21,22 +21,6 @@ jobs:
         run: |
           echo "$SSH_PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
-              # 检查 Docker 是否已安装
-              if ! command -v docker &> /dev/null; then
-                  echo "Docker 未安装，正在安装..."
-                  # 安装 Docker 的命令
-                  sudo yum update -y
-                  sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-                  sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-                  sudo yum install -y docker-ce docker-ce-cli containerd.io
-                  sudo systemctl start docker
-                  sudo systemctl enable docker
-                  echo "Docker 安装完成."
-              else
-                  echo "Docker 已安装，版本为：$(docker --version)"
-              fi
-          EOF
           # 使用SSH检查服务是否存在
           if ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP "systemctl is-active --quiet clash"; then
             echo "服务 clash 正在运行"
@@ -55,9 +39,28 @@ jobs:
                 rm -fr clash
                 systemctl enable clash
                 systemctl start clash
+                export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890
+                echo 'export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890' >> ~/.bashrc
                 echo "clash 安装完成."
           EOF
           fi
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
+              # 检查 Docker 是否已安装
+              if ! command -v docker &> /dev/null; then
+                  echo "Docker 未安装，正在安装..."
+                  # 安装 Docker 的命令
+                  sudo yum update -y
+                  sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+                  sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                  sudo yum install -y docker-ce docker-ce-cli containerd.io
+                  sudo systemctl start docker
+                  sudo systemctl enable docker
+                  echo "Docker 安装完成."
+              else
+                  echo "Docker 已安装，版本为：$(docker --version)"
+              fi
+          EOF
+
           # 更新 docker 的 proxy
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
               # 使用grep检查环境变量是否存在
