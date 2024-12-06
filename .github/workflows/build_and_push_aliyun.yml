@@ -44,7 +44,7 @@ jobs:
             echo "开始安装 clash"
             scp -i private_key.pem .reference/clash.tar.gz $ECS_USER@$ECS_IP:/tmp/clash.tar.gz
             scp -i private_key.pem .reference/config.yaml $ECS_USER@$ECS_IP:/tmp/config.yaml
-            ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF1
+            ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
                 cd /tmp
                 mkdir /etc/clash
                 mv config.yaml /etc/clash/
@@ -56,10 +56,10 @@ jobs:
                 systemctl enable clash
                 systemctl start clash
                 echo "clash 安装完成."
-            EOF1
+          EOF
           fi
           # 更新 docker 的 proxy
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF2
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
               # 使用grep检查环境变量是否存在
               ENV_VARIABLE='Environment=\"HTTP_PROXY=http://127.0.0.1:7890\"'
               if grep -q "$ENV_VARIABLE" /lib/systemd/system/docker.service; then
@@ -71,7 +71,7 @@ jobs:
                 systemctl restart docker
                 echo "docker 配置 proxy 完成."
               fi
-          EOF2
+          EOF
 
   ecs-start-docker-compose:
     needs: [confirm-ecs-install-docker]
