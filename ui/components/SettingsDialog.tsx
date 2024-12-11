@@ -78,10 +78,7 @@ const SettingsDialog = ({
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }) => {
-  if (isOpen && !isLoggedIn) {
-    window.location.href = '/handler/sign-in?after_auth_return_to=%2F';
-    return null;
-  }
+
   const [config, setConfig] = useState<SettingsType | null>(null);
   const [chatModels, setChatModels] = useState<Record<string, any>>({});
   const [embeddingModels, setEmbeddingModels] = useState<Record<string, any>>(
@@ -201,7 +198,10 @@ const SettingsDialog = ({
       window.location.reload();
     }
   };
-
+  if (isOpen && !isLoggedIn) {
+    window.location.href = '/handler/sign-in?after_auth_return_to=%2F';
+    return null;
+  }
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog
