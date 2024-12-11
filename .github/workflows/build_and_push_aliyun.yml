@@ -164,6 +164,7 @@ jobs:
           EOF
           scp -i private_key.pem docker-compose-prod.yaml $ECS_USER@$ECS_IP:/data/docker-compose.yaml
           scp -i private_key.pem .tmp.env $ECS_USER@$ECS_IP:/data/.env
+          scp -i private_key.pem config.toml $ECS_USER@$ECS_IP:/data/config.toml
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
             cd /data
             docker compose down
