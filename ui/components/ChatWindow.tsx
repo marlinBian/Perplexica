@@ -187,7 +187,9 @@ const useSocket = (
             );
           }
         }, 10000);
-
+        ws.onopen = ()=>{
+          console.log('ws opened')
+        }
         ws.addEventListener('message', (e) => {
           const data = JSON.parse(e.data);
           if (data.type === 'signal' && data.data === 'open') {
@@ -286,7 +288,7 @@ const loadMessages = async (
 
   document.title = messages[0].content;
 
-  const files = data.chat.files.map((file: any) => {
+  const files = data.chat.files?.map((file: any) => {
     return {
       fileName: file.name,
       fileExtension: file.name.split('.').pop(),
@@ -360,6 +362,7 @@ const ChatWindow = ({ id, userInfo }: { id?: string; userInfo?: string }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 定义清理函数，确保链接被关闭
   useEffect(() => {
     return () => {
       if (ws?.readyState === 1) {
@@ -377,7 +380,7 @@ const ChatWindow = ({ id, userInfo }: { id?: string; userInfo?: string }) => {
   }, [messages]);
 
   useEffect(() => {
-    if (isMessagesLoaded && isWSReady) {
+    if (isMessagesLoaded) {
       setIsReady(true);
       console.log('[DEBUG] ready');
     }
@@ -545,7 +548,7 @@ const ChatWindow = ({ id, userInfo }: { id?: string; userInfo?: string }) => {
       </div>
     );
   }
-
+  console.log('before render, ', isReady, notFound, isMessagesLoaded, isWSReady)
   return isReady ? (
     notFound ? (
       <Error statusCode={404} />

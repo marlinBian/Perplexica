@@ -10,6 +10,8 @@ export const loadGroqChatModels = async () => {
   if (!groqApiKey) return {};
 
   try {
+    logger.info(`process.env: `, process.env);
+    logger.info(`process.env.HTTPS_PROXY: ${process.env.HTTPS_PROXY}`);
     const chatModels = {
       'llama-3.2-3b-preview': {
         displayName: 'Llama 3.2 3B',
@@ -21,6 +23,8 @@ export const loadGroqChatModels = async () => {
           },
           {
             baseURL: 'https://api.groq.com/openai/v1',
+            httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+            fetch
           },
         ),
       },
@@ -34,6 +38,8 @@ export const loadGroqChatModels = async () => {
           },
           {
             baseURL: 'https://api.groq.com/openai/v1',
+            httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+            fetch
           },
         ),
       },
@@ -47,6 +53,8 @@ export const loadGroqChatModels = async () => {
           },
           {
             baseURL: 'https://api.groq.com/openai/v1',
+            httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+            fetch
           },
         ),
       },
@@ -75,6 +83,8 @@ export const loadGroqChatModels = async () => {
           },
           {
             baseURL: 'https://api.groq.com/openai/v1',
+            httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+            fetch
           },
         ),
       },
@@ -88,6 +98,8 @@ export const loadGroqChatModels = async () => {
           },
           {
             baseURL: 'https://api.groq.com/openai/v1',
+            httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+            fetch
           },
         ),
       },
@@ -116,6 +128,8 @@ export const loadGroqChatModels = async () => {
           },
           {
             baseURL: 'https://api.groq.com/openai/v1',
+            httpAgent: new HttpsProxyAgent(process.env.HTTPS_PROXY),
+            fetch
           },
         ),
       },
