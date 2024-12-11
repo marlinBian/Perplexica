@@ -16,13 +16,16 @@ services:
     # image: itzcrazykns1337/perplexica-backend:main
     environment:
       - SEARXNG_API_URL=http://searxng:8080
+      - HTTP_PROXY=http://host.docker.internal:7890
+      - HTTPS_PROXY=http://host.docker.internal:7890
+      - NO_PROXY=localhost,127.0.0.1,host.docker.internal
     depends_on:
       - searxng
     ports:
       - 3001:3001
     volumes:
-      - backend-dbstore:/home/perplexica/data
-      - uploads:/home/perplexica/uploads
+      - ./data:/home/perplexica/data
+      - ./uploads:/home/perplexica/uploads
       - ./config.toml:/home/perplexica/config.toml
     extra_hosts:
       - 'host.docker.internal:host-gateway'
@@ -49,6 +52,3 @@ services:
 networks:
   perplexica-network:
 
-volumes:
-  backend-dbstore:
-  uploads:
