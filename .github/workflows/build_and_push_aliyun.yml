@@ -117,10 +117,10 @@ jobs:
             IMAGE_NAME=perplexica-frontend; \
           fi
           docker buildx build --platform linux/amd64,linux/arm64 \
-            --cache-from=type=registry,ref=${{ vars.DOCKER_USERNAME }}/${IMAGE_NAME}:main \
+            --cache-from=type=registry,ref=${{ vars.DOCKER_USERNAME }}/${IMAGE_NAME}:release \
             --cache-to=type=inline \
             -f $DOCKERFILE \
-            -t ${{ vars.DOCKER_USERNAME }}/${IMAGE_NAME}:main \
+            -t ${{ vars.DOCKER_USERNAME }}/${IMAGE_NAME}:release \
             --push .
 
       - name: Build and push release Docker image for ${{ matrix.service }}

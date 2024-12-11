@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
 
   perplexica-backend:
-    image: ${DOCKER_USERNAME}/perplexica-backend:main
+    image: ${DOCKER_USERNAME}/perplexica-backend:release
     environment:
       - SEARXNG_API_URL=http://searxng:8080
       - HTTP_PROXY=http://host.docker.internal:7890
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   perplexica-frontend:
-    image: ${DOCKER_USERNAME}/perplexica-frontend:main
+    image: ${DOCKER_USERNAME}/perplexica-frontend:release
     depends_on:
       - perplexica-backend
     ports:
