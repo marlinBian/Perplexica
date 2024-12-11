@@ -141,10 +141,8 @@ jobs:
             -t ${{ vars.DOCKER_USERNAME }}/${IMAGE_NAME}:${{ env.RELEASE_VERSION }} \
             --push .
 
-
-
   ecs-start-docker-compose:
-    needs: [confirm-ecs-install-docker]
+    needs: [confirm-ecs-install-docker,build-and-push-docker-hub]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
