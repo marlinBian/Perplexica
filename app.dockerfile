@@ -8,6 +8,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 WORKDIR /home/perplexica
 
 COPY ui /home/perplexica/
+COPY ui/.env.xu /home/perplexica/.env
 
 RUN yarn install --frozen-lockfile
 RUN yarn build
