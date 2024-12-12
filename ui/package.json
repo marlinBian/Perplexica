@@ -14,7 +14,7 @@
     "@headlessui/react": "^2.2.0",
     "@icons-pack/react-simple-icons": "^9.4.0",
     "@langchain/openai": "^0.0.25",
-    "@stackframe/stack": "^2.5.21",
+    "@stackframe/stack": "^2.6.34",
     "@tailwindcss/typography": "^0.5.12",
     "clsx": "^2.1.0",
     "cookies-next": "^4.2.1",
