@@ -171,8 +171,11 @@ jobs:
           scp -i private_key.pem xu.config.toml $ECS_USER@$ECS_IP:/data/config.toml
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
             cd /data
+            echo 'outputs -> ${{ needs.prepare.outputs.SERVICES_JSON }}'
             services=$(echo '${{ needs.prepare.outputs.SERVICES_JSON }}' | jq -r '.[]')
+            echo "services -> $services"
             for service in $services; do
+              echo "service -> $service"
               local_image_id=$(docker images --no-trunc ${{ vars.DOCKER_USERNAME }}/perplexica-$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }} -q)
               remote_image_id=$(docker inspect --format='{{.Id}}' ${{ vars.DOCKER_USERNAME }}/perplexica-$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }})
               echo "$service: local[$local_image_id]; remote[$remote_image_id]"
