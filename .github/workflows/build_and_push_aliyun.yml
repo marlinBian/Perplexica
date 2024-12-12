@@ -146,8 +146,6 @@ jobs:
     needs: [confirm-ecs-install-docker,build-and-push-docker-hub,prepare]
     runs-on: ubuntu-latest
     steps:
-      - name: use jq
-        uses: cloudposse/github-action-jq@main
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Upload and execute compose file to ecs
