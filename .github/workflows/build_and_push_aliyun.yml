@@ -148,6 +148,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Setup jq
+        uses: vegardit/gha-setup-jq@v1
       - name: Upload and execute compose file to ecs
         env:
           SSH_PRIVATE_KEY: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
