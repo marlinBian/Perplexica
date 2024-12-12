@@ -46,35 +46,48 @@ jobs:
           EOF
           fi
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
-              # 检查 Docker 是否已安装
-              if ! command -v docker &> /dev/null; then
-                  echo "Docker 未安装，正在安装..."
-                  # 安装 Docker 的命令
-                  sudo yum update -y
-                  sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-                  sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-                  sudo yum install -y docker-ce docker-ce-cli containerd.io
-                  sudo systemctl start docker
-                  sudo systemctl enable docker
-                  echo "Docker 安装完成."
-              else
-                  echo "Docker 已安装，版本为：$(docker --version)"
-              fi
+            # 检查 Docker 是否已安装
+            if ! command -v docker &> /dev/null; then
+                echo "Docker 未安装，正在安装..."
+                # 安装 Docker 的命令
+                sudo yum update -y
+                sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                sudo yum install -y docker-ce docker-ce-cli containerd.io
+                sudo systemctl start docker
+                sudo systemctl enable docker
+                echo "Docker 安装完成."
+            else
+                echo "Docker 已安装，版本为：$(docker --version)"
+            fi
           EOF
 
           # 更新 docker 的 proxy
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
-              # 使用grep检查环境变量是否存在
-              ENV_VARIABLE='Environment="HTTP_PROXY=http://127.0.0.1:7890"'
-              if grep -q "$ENV_VARIABLE" /lib/systemd/system/docker.service; then
-                sudo sed -i '/\[Service\]/a Environment="HTTP_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
-                sudo sed -i '/\[Service\]/a Environment="HTTPS_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
-                systemctl daemon-reload
-                systemctl restart docker
-                echo "docker 配置 proxy 完成."
-              else
-                echo "docker 已配置 proxy"
-              fi
+            # 使用grep检查环境变量是否存在
+            ENV_VARIABLE='Environment="HTTP_PROXY=http://127.0.0.1:7890"'
+            if grep -q "$ENV_VARIABLE" /lib/systemd/system/docker.service; then
+              sudo sed -i '/\[Service\]/a Environment="HTTP_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
+              sudo sed -i '/\[Service\]/a Environment="HTTPS_PROXY=http://127.0.0.1:7890"' /lib/systemd/system/docker.service
+              systemctl daemon-reload
+              systemctl restart docker
+              echo "docker 配置 proxy 完成."
+            else
+              echo "docker 已配置 proxy"
+            fi
+          EOF
+
+          # 安装 jq
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
+            # 检查 jq 是否安装
+            if command -v jq &> /dev/null; then
+                echo "jq is installed, version: $(jq --version)"
+            else
+                echo "jq is not installed. Installing..."
+                # 使用 yum 安装 jq
+                sudo yum install -y jq
+                echo "jq has been installed."
+            fi
           EOF
 
   prepare:
