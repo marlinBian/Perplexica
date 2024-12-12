@@ -77,11 +77,25 @@ jobs:
               fi
           EOF
 
+  prepare:
+    runs-on: ubuntu-latest
+    outputs: 
+      SERVICES_JSON: ${{ steps.output_json.outputs.SERVICES_JSON }}
+    steps:
+      - name: services array
+        id: output_json
+        run: |
+          echo '["backend", "frontend"]' > services.json
+          echo "SERVICES_JSON=$(cat services.json)" >> $GITHUB_OUTPUT
+                  
   build-and-push-docker-hub:
     runs-on: ubuntu-latest
+    needs: prepare
     strategy:
       matrix:
-        service: [backend, app]
+        service: ${{ fromJson(needs.prepare.outputs.SERVICES_JSON) }}
+    outputs:
+      VERSION: ${{ steps.build_step.outputs.VERSION }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -102,30 +116,17 @@ jobs:
 
       - name: Extract version from release tag
         if: github.event_name == 'release'
-        id: version
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Build and push Docker image for ${{ matrix.service }}
-        if: startsWith(github.ref, 'refs/heads/release/') && github.event_name == 'push'
-        run: |
-          docker buildx create --use
-          if [[ "${{ matrix.service }}" == "backend" ]]; then \
-            DOCKERFILE=backend.dockerfile; \
-            IMAGE_NAME=perplexica-backend; \
-          else \
-            DOCKERFILE=app.dockerfile; \
-            IMAGE_NAME=perplexica-frontend; \
-          fi
-          docker buildx build --platform linux/amd64,linux/arm64 \
-            --cache-from=type=registry,ref=${{ vars.DOCKER_USERNAME }}/${IMAGE_NAME}:release \
-            --cache-to=type=inline \
-            -f $DOCKERFILE \
-            -t ${{ vars.DOCKER_USERNAME }}/${IMAGE_NAME}:release \
-            --push .
+      - name: Handle push event
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
+        run: echo "RELEASE_VERSION=release" >> $GITHUB_ENV
 
       - name: Build and push release Docker image for ${{ matrix.service }}
-        if: github.event_name == 'release'
+        id: build_step
+        if: github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
         run: |
+          echo "VERSION=${{ env.RELEASE_VERSION }}" >> $GITHUB_OUTPUT
           docker buildx create --use
           if [[ "${{ matrix.service }}" == "backend" ]]; then \
             DOCKERFILE=backend.dockerfile; \
@@ -142,7 +143,7 @@ jobs:
             --push .
 
   ecs-start-docker-compose:
-    needs: [confirm-ecs-install-docker,build-and-push-docker-hub]
+    needs: [confirm-ecs-install-docker,build-and-push-docker-hub,prepare]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -170,6 +171,12 @@ jobs:
           scp -i private_key.pem xu.config.toml $ECS_USER@$ECS_IP:/data/config.toml
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
             cd /data
+            services=$(echo '${{ needs.prepare.outputs.SERVICES_JSON }}' | jq -r '.[]')
+            for service in $services; do
+              local_image_id=$(docker images --no-trunc ${{ vars.DOCKER_USERNAME }}/perplexica-$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }} -q)
+              remote_image_id=$(docker inspect --format='{{.Id}}' ${{ vars.DOCKER_USERNAME }}/perplexica-$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }})
+              echo "$service: local[$local_image_id]; remote[$remote_image_id]"
+            done
             docker compose down
             docker compose up -d 
           EOF
