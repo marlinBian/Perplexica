@@ -185,15 +185,24 @@ jobs:
           scp -i private_key.pem .tmp.env $ECS_USER@$ECS_IP:/data/.env
           scp -i private_key.pem xu.config.toml $ECS_USER@$ECS_IP:/data/config.toml
           ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
-            cd /data
+            set -e  # 如果任何命令失败，退出脚本
+            cd /data || { echo "Failed to change directory to /data"; exit 1; }
+
+            # 创建 services.json 文件
             echo '${{ needs.prepare.outputs.SERVICES_JSON }}' > services.json
-            services=$(jq -r '.[]' services.json)
+
+            # 检查 services.json 是否成功创建
+            if [ ! -f services.json ]; then
+                echo "services.json was not created successfully."
+                exit 1
+            fi
+            services=\$(jq -r '.[]' services.json)
             # 使用jq解析并遍历服务数组
-            for service in $services; do
-              echo "service -> $service"
-              local_image_id=$(docker images --no-trunc ${{ vars.DOCKER_USERNAME }}/perplexica-$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }} -q)
-              remote_image_id=$(docker inspect --format='{{.Id}}' ${{ vars.DOCKER_USERNAME }}/perplexica-$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }})
-              echo "$service: local[$local_image_id]; remote[$remote_image_id]"
+            for service in \$services; do
+              echo "service -> \$service"
+              local_image_id=\$(docker images --no-trunc ${{ vars.DOCKER_USERNAME }}/perplexica-\$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }} -q)
+              remote_image_id=\$(docker inspect --format='{{.Id}}' ${{ vars.DOCKER_USERNAME }}/perplexica-\$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }})
+              echo "\$service: local[\$local_image_id]; remote[\$remote_image_id]"
             done
             docker compose down
             docker compose up -d 
