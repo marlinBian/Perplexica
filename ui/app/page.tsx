@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   description: 'Chat with the internet, chat with Perplexica.',
 };
 
+
 const Home = () => {
   return (
     <div>
