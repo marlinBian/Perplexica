@@ -3,7 +3,7 @@ name: Build & Push Docker Images & Deploy Aliyun
 on:
   push:
     branches:
-      - release/*
+      - tag/*
   release:
     types: [published]
 
