@@ -3,7 +3,7 @@ name: Build & Push Docker Images & Deploy Aliyun
 on:
   push:
     branches:
-      - tag/*
+      - release/*
   release:
     types: [published]
 
@@ -90,49 +90,49 @@ jobs:
             fi
           EOF
 
-  check-changes:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-            fetch-depth: 5
-
-      - name: Get changed files
-        id: get_changed_files
-        run: |
-          # 获取上一个提交的SHA
-          PREVIOUS_COMMIT=$(git rev-parse HEAD^)
-          
-          # 获取变更文件，并筛选出特定目录（例如：src/）
-          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- src/)
-          
-          # 将变更文件输出为环境变量
-          echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
-          echo "src changed_files=$CHANGED_FILES"
-
-          # 获取变更文件，并筛选出特定目录（例如：./）
-          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- ./)
-          
-          # 将变更文件输出为环境变量
-          echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
-          echo ". changed_files=$CHANGED_FILES"
-
-      - name: Output changed files
-        run: |
-          echo "Changed files in 'src/' directory:"
-          echo "${{ env.changed_files }}"
 
   prepare:
     runs-on: ubuntu-latest
     outputs: 
       SERVICES_JSON: ${{ steps.output_json.outputs.SERVICES_JSON }}
+      SRC_CHANGE: ${{steps.get_changed_files.outputs.SRC_CHANGE}}
+      UI_CHANGE: ${{steps.get_changed_files.outputs.UI_CHANGE}}
     steps:
       - name: services array
         id: output_json
         run: |
           echo '["backend", "frontend"]' > services.json
           echo "SERVICES_JSON=$(cat services.json)" >> $GITHUB_OUTPUT
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 5
+  
+      - name: Get changed files
+        id: get_changed_files
+        run: |
+          # 获取上一个提交的SHA
+          PREVIOUS_COMMIT=$(git rev-parse HEAD^)
+                    
+          # 0 - 没有文件变更
+          # 1 - 有文件变更
+          # 获取变更文件，并筛选出特定目录（例如：src/）
+          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- src/)
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "SRC_CHANGE=0" >> $GITHUB_OUTPUT
+          else
+            echo "SRC_CHANGE=1" >> $GITHUB_OUTPUT
+          fi
+
+          # 获取变更文件，并筛选出特定目录（例如：ui/）
+          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- ui/)
+          echo "CHANGED_FILES_ui =  $CHANGED_FILES"
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "UI_CHANGE=0" >> $GITHUB_OUTPUT
+          else
+            echo "UI_CHANGE=1" >> $GITHUB_OUTPUT
+          fi
                   
   build-and-push-docker-hub:
     runs-on: ubuntu-latest
@@ -145,28 +145,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-            fetch-depth: 5
-
-      - name: Get changed files
-        id: get_changed_files
-        run: |
-          # 获取上一个提交的SHA
-          PREVIOUS_COMMIT=$(git rev-parse HEAD^)
-          
-          # 获取变更文件，并筛选出特定目录（例如：src/）
-          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- src/)
-          
-          # 将变更文件输出为环境变量
-          echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
-          echo "src changed_files=$CHANGED_FILES"
-
-          # 获取变更文件，并筛选出特定目录（例如：./）
-          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- ./)
-          
-          # 将变更文件输出为环境变量
-          echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
-          echo ". changed_files=$CHANGED_FILES"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -194,6 +172,14 @@ jobs:
         id: build_step
         if: github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
         run: |
+          if [[ "${{ needs.prepare.outputs.SRC_CHANGE}}" == "0" && "${{ matrix.service }}" == "backend" ]]; then
+            echo "src 没有变化，不更新 image"
+            exit 0
+          fi
+          if [[ "${{ needs.prepare.outputs.UI_CHANGE}}" == "0" && "${{ matrix.service }}" == "frontend" ]]; then
+            echo "ui 没有变化，不更新 image"
+            exit 0
+          fi
           echo "VERSION=${{ env.RELEASE_VERSION }}" >> $GITHUB_OUTPUT
           docker buildx create --use
           if [[ "${{ matrix.service }}" == "backend" ]]; then \
@@ -219,7 +205,7 @@ jobs:
 
       - name: Setup jq
         uses: vegardit/gha-setup-jq@v1
-        
+
       - name: Upload and execute compose file to ecs
         env:
           SSH_PRIVATE_KEY: ${{ secrets.ECS_SSH_PRIVATE_KEY }}
@@ -254,18 +240,26 @@ jobs:
                 exit 1
             fi
             services=\$(jq -r '.[]' services.json)
+            # 停止 docker 服务
+            docker compose down
             # 使用jq解析并遍历服务数组
             for service in \$services; do
               echo "service -> \$service"
               IMAGE=${{ vars.DOCKER_USERNAME }}/perplexica-\$service:${{ needs.build-and-push-docker-hub.outputs.VERSION }}
               # 使用docker images命令检查镜像是否存在
               if [ "\$(docker images -q \$IMAGE 2> /dev/null)" == "" ]; then
-                  continue
+                continue
               fi
-              local_image_id=\$(docker images --no-trunc \$IMAGE -q)
-              remote_image_id=\$(docker inspect --format='{{.Id}}' \$IMAGE)
-              echo "\$service: local[\$local_image_id]; remote[\$remote_image_id]"
+              # backend 代码有变更，移除本地的 image
+              if [[ "${{ needs.prepare.outputs.SRC_CHANGE}}" != "0" && "\$service" == "backend" ]]; then
+                echo "移除 backend 镜像"
+                docker rmi \$IMAGE
+              fi
+              # frontend 代码有变更，移除本地的 image
+              if [[ "${{ needs.prepare.outputs.UI_CHANGE}}" != "0" && "\$service" == "frontend" ]]; then
+                echo "移除 frontend 镜像"
+                docker rmi \$IMAGE
+              fi
             done
-            docker compose down
             docker compose up -d 
           EOF

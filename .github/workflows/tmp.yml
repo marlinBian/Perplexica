@@ -19,20 +19,23 @@ jobs:
           # 获取上一个提交的SHA
           PREVIOUS_COMMIT=$(git rev-parse HEAD^)
           
+          # 0 - 没有文件变更
+          # 1 - 有文件变更
           # 获取变更文件，并筛选出特定目录（例如：src/）
           CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- src/)
           if [ -z "$CHANGED_FILES" ]; then
-            echo "SRC_CHANGE=1" >> $GITHUB_ENV
-          else
             echo "SRC_CHANGE=0" >> $GITHUB_ENV
+          else
+            echo "SRC_CHANGE=1" >> $GITHUB_ENV
           fi
 
           # 获取变更文件，并筛选出特定目录（例如：ui/）
           CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT HEAD -- ui/)
+          echo "CHANGED_FILES_ui =  $CHANGED_FILES"
           if [ -z "$CHANGED_FILES" ]; then
-            echo "UI_CHANGE=1" >> $GITHUB_ENV
-          else
             echo "UI_CHANGE=0" >> $GITHUB_ENV
+          else
+            echo "UI_CHANGE=1" >> $GITHUB_ENV
           fi
 
       - name: Output changed files
