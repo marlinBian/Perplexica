@@ -90,6 +90,34 @@ jobs:
             fi
           EOF
 
+          # 安装 nginx
+          if ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP "systemctl is-active --quiet nginx"; then
+            echo "服务 nginx 正在运行"
+          else
+            # 安装启动 nginx
+            ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
+              # 更新软件包并安装Nginx
+              sudo yum update -y
+              sudo yum install -y nginx
+              # 启动Nginx服务
+              sudo systemctl start nginx
+              echo "Nginx 安装完成"
+          EOF
+            # 创建 ssl 目录
+            ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP << EOF
+            # 检查目录是否已存在，不存在则创建
+            if [ ! -d "/ssl" ]; then
+              echo "mkdir ssl dir"
+              mkdir -p "/ssl"  
+            fi
+          EOF
+            # 将配置文件上传到 ecs 中
+            scp -i private_key.pem .reference/nginx-ssl/staylivinglee.conf $ECS_USER@$ECS_IP:/etc/nginx/conf.d/my.conf
+            scp -i private_key.pem .reference/nginx-ssl/cert.pem $ECS_USER@$ECS_IP:/ssl/cert.pem
+            scp -i private_key.pem .reference/nginx-ssl/cert.key $ECS_USER@$ECS_IP:/ssl/cert.key
+            # 重启 nginx 实现反向代理
+            ssh -o StrictHostKeyChecking=no -i private_key.pem $ECS_USER@$ECS_IP "sudo nginx -s reload"
+          fi
 
   prepare:
     runs-on: ubuntu-latest
