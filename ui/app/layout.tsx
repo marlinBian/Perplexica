@@ -34,7 +34,7 @@ export default function RootLayout({
           <StackTheme>
             <ThemeProvider>
               <Suspense>
-                <Sidebar>{children}</Sidebar>
+                <Sidebar key='key-sidebar' >{children}</Sidebar>
               </Suspense>
               <Toaster
                 toastOptions={{

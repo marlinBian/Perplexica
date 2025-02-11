@@ -1,6 +1,5 @@
 import { Settings } from 'lucide-react';
 import EmptyChatMessageInput from './EmptyChatMessageInput';
-import SettingsDialog from './SettingsDialog';
 import { useState } from 'react';
 import { File } from './ChatWindow';
 

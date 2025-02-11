@@ -1,4 +1,6 @@
-import ChatWindow from '@/components/ChatWindow';
+// import ChatWindow from '@/components/ChatWindow';
+import LogInChatWindow from '@/components/LogInChatWindow';
+
 import { Metadata } from 'next';
 import { Suspense } from 'react';
 
@@ -12,7 +14,7 @@ const Home = () => {
   return (
     <div>
       <Suspense>
-        <ChatWindow />
+        <LogInChatWindow />
       </Suspense>
     </div>
   );

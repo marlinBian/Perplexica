@@ -1,7 +1,8 @@
-import ChatWindow from '@/components/ChatWindow';
+// import ChatWindow from '@/components/ChatWindow';
+import LogInChatWindow from '@/components/LogInChatWindow'
 
 const Page = ({ params }: { params: { chatId: string } }) => {
-  return <ChatWindow id={params.chatId} />;
+  return <LogInChatWindow id={params.chatId} />;
 };
 
 export default Page;

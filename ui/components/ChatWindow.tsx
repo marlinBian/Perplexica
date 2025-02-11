@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { DependencyList, useEffect, useRef, useState } from 'react';
 import { Document } from '@langchain/core/documents';
 import Navbar from './Navbar';
 import Chat from './Chat';
@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 import { getSuggestions } from '@/lib/actions';
 import Error from 'next/error';
-import { useUser } from '@stackframe/stack';
 import { getCookie } from 'cookies-next';
 
 export type Message = {
@@ -37,7 +36,7 @@ const useSocket = (
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    if (!ws) {
+    if (!ws ) {
       const connectWs = async () => {
         let chatModel = localStorage.getItem('chatModel');
         let chatModelProvider = localStorage.getItem('chatModelProvider');
@@ -46,15 +45,22 @@ const useSocket = (
           'embeddingModelProvider',
         );
 
+        const accessToken = getCookie('user_access_token');
+        const refreshToken = getCookie('user_refresh_token');
         const providers = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/models`,
           {
             headers: {
               'Content-Type': 'application/json',
+              'x-stack-access-token': accessToken || '',
+              'x-stack-refresh-token': refreshToken || '',
             },
           },
         ).then(async (res) => await res.json());
-
+        if(providers && providers.message){
+          setError(true);
+          return;
+        }
         if (
           !chatModel ||
           !chatModelProvider ||
@@ -167,8 +173,6 @@ const useSocket = (
         searchParams.append('embeddingModel', embeddingModel!);
         searchParams.append('embeddingModelProvider', embeddingModelProvider);
 
-        const accessToken = getCookie('user_access_token');
-        const refreshToken = getCookie('user_refresh_token');
         console.log(
           'in websocket, aToken = %s\nrToken = %s',
           accessToken,
@@ -215,7 +219,7 @@ const useSocket = (
 
         ws.onclose = () => {
           clearTimeout(timeoutId);
-          setError(true);
+          // setError(true);
           console.log('[DEBUG] closed');
         };
 

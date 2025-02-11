@@ -17,6 +17,7 @@ const VerticalIconContainer = ({ children }: { children: ReactNode }) => {
 };
 
 const Sidebar = ({ children }: { children: React.ReactNode }) => {
+  console.log('render-Sidebar')
   const segments = useSelectedLayoutSegments();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
